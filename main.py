@@ -9,10 +9,24 @@ print(conn.krpc.get_status().version)
 
 vessel = conn.space_center.active_vessel
 flight = vessel.flight()
+control = vessel.control
 
-altitude = conn.add_stream(getattr, flight, 'mean_altitude')
+control.rcs = True
+control.sas = True
 
-while altitude() < 1000:
-    pass
+control.activate_next_stage()
 
-print('Altitude reached 1000m')
+control.throttle = 1.0
+
+while flight.mean_altitude < 10000:
+    stage = control.current_stage - 1
+    resources = vessel.resources_in_decouple_stage(stage, False)
+    print("Stage: " + str(stage))
+    print("Altitude: " + str(flight.mean_altitude))
+    print("Resources:")
+    for name in resources.names:
+        print(name + ": " + str(resources.amount(name)))
+    if resources.amount('LiquidFuel') == 0.0:
+        control.activate_next_stage()
+
+control.throttle = 0.0
